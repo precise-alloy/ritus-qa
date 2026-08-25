@@ -1,0 +1,16 @@
+{
+  "name": "ritus-qa-marketplace",
+  "version": "1.0.0",
+  "description": "Standalone marketplace for ritus-qa plugin, providing a comprehensive manual QA workflow for Optimizely CMS and frontend projects.",
+  "owner": {
+    "name": "eshn"
+  },
+  "plugins": [
+    {
+      "name": "ritus-qa",
+      "description": "End-to-end manual QA workflow for Optimizely CMS + frontend projects: Jira/ADO ticket fetch, test planning, test case design, browser auto-execution, CMS/UI checklists, bug reports, and test summaries.",
+      "version": "0.1.0",
+      "source": "./"
+    }
+  ]
+}

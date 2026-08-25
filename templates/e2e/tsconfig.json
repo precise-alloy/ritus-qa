@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "types": ["node", "@playwright/test"],
+    "baseUrl": ".",
+    "paths": {
+      "@pages/*": ["page_objects/*"],
+      "@interfaces/*": ["page_interfaces/*"],
+      "@commons/*": ["commons/*"],
+      "@utils/*": ["utils/*"],
+      "@test-data/*": ["test-data/*"]
+    }
+  },
+  "include": ["e2e_tests", "page_objects", "page_interfaces", "commons", "utils", "config.env.ts", "playwright.config.ts"]
+}

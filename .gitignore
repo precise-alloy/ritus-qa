@@ -1,0 +1,8 @@
+.qa/
+node_modules/
+dist/
+docs/
+
+# CMS exports carry real customer content — never commit them
+# If you later add a deliberately sanitised, committable fixture, add a negation like !tests/fixtures/**/*.episerverdata first.
+*.episerverdata

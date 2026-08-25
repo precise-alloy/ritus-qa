@@ -1,0 +1,14 @@
+import { test, expect } from '@playwright/test';
+import globalENV from '../../config.env';
+import MethodHelper from '../../utils/MethodHelper';
+
+/**
+ * Smoke: the site loads and responds. Delete or extend once real specs exist.
+ */
+test.describe('Smoke', () => {
+  test('home page loads', async ({ page }) => {
+    await page.goto(globalENV.TEST_BASE_URL);
+    await MethodHelper.clickToAcceptCookieButton(page);
+    await expect(page).toHaveTitle(/.+/);
+  });
+});

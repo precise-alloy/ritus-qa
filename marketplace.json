@@ -1,0 +1,16 @@
+{
+  "name": "ritus-qa-marketplace",
+  "version": "1.0.0",
+  "description": "Standalone marketplace for ritus-qa plugin, providing a comprehensive manual QA workflow for Optimizely CMS and frontend projects.",
+  "owner": {
+    "name": "eshn"
+  },
+  "plugins": [
+    {
+      "name": "ritus-qa",
+      "description": "A skill pack for manual QA engineers working on Optimizely CMS + frontend projects. Works with Claude Code and GitHub Copilot CLI.",
+      "version": "0.1.0",
+      "source": "./"
+    }
+  ]
+}

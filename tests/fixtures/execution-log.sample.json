@@ -1,0 +1,26 @@
+{
+  "ticketId": "PROJ-123",
+  "baseUrl": "https://staging.client-site.com",
+  "cases": [
+    {
+      "id": "TC-001",
+      "title": "CTA navigates to campaign page",
+      "triage": "automatable",
+      "steps": [
+        { "action": "goto", "url": "/" },
+        { "action": "click", "selector": "role=button[name='Explore now']" },
+        { "action": "expectUrl", "url": "/campaign" }
+      ],
+      "result": "pass"
+    },
+    {
+      "id": "TC-002",
+      "title": "Manual verification of physical gift card",
+      "triage": "manual",
+      "steps": [
+        { "action": "expectVisible", "selector": "#physical-gift-card" }
+      ],
+      "result": "pass"
+    }
+  ]
+}

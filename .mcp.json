@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "optimizely-test-data": {
+      "command": "bunx",
+      "args": ["optimizely-test-data-mcp@0.1.2"],
+      "tools": ["*"]
+    }
+  }
+}
