@@ -24,10 +24,33 @@ End-to-end QA workflow plus on-demand local exports:
 - Playwright MCP runs via `npx @playwright/mcp@latest`; Figma MCP is remote and optional
 - For `cms-test-data`: a content-types export from the site under test at `.qa/cms-schema/content-types.episerverdata`, produced once in the CMS under **Admin → Export Data** with **content types only** (never a content export — it carries real customer data). Re-export it only when the site's schema changes.
 
+## Install
+
+**Claude Code:**
+
+1. Add marketplace
+2. Install Ritus QA
+
+```text
+/plugin marketplace add precise-alloy/ritus-qa
+/plugin install ritus-qa
+```
+
+**GitHub Copilot CLI:**
+
+1. Add the marketplace
+2. Fetch the plugin manifest
+3. Install Ritus QA
+
+```text
+/plugin marketplace add precise-alloy/ritus-qa
+/plugin marketplace browse ritus-qa-marketplace
+/plugin install ritus-qa@ritus-qa-marketplace
+```
+
 ## Setup
 
-1. Clone/install this plugin into your agent host (Claude Code plugin dir or Copilot CLI extensions).
-2. `artifact-export` automatically installs missing committed export dependencies the first time it sees a valid export request. If you need to recover manually, run this from the plugin root that contains `package.json` and `bun.lock`:
+1. `artifact-export` automatically installs missing committed export dependencies the first time it sees a valid export request. If you need to recover manually, run this from the plugin root that contains `package.json` and `bun.lock`:
 
    ```powershell
    bun install --frozen-lockfile
@@ -35,7 +58,7 @@ End-to-end QA workflow plus on-demand local exports:
 
    Never run that command in the project under test.
 
-3. Create `.qa/.env.local` in the project under test (copy `templates/env.local.example` or paste the block below) and fill in Jira and/or ADO credentials plus the test environment URL. `.qa/` is git-ignored — never commit real tokens.
+2. Create `.qa/.env.local` in the project under test (copy `templates/env.local.example` or paste the block below) and fill in Jira and/or ADO credentials plus the test environment URL. `.qa/` is git-ignored — never commit real tokens.
 
    ```dotenv
    # Ritus QA configuration — copy this file to .qa/.env.local and fill in values.
@@ -55,7 +78,7 @@ End-to-end QA workflow plus on-demand local exports:
    TEST_BASE_URL=https://staging.client-site.com
    ```
 
-4. Register the MCP servers in the **project under test's** `.mcp.json` (the plugin ships no `.mcp.json` — each project owns its config). Add this to the project's `.mcp.json`:
+3. Register the MCP servers in the **project under test's** `.mcp.json` (the plugin ships no `.mcp.json` — each project owns its config). Add this to the project's `.mcp.json`:
 
    ```json
    {
