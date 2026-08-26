@@ -50,15 +50,7 @@ End-to-end QA workflow plus on-demand local exports:
 
 ## Setup
 
-1. `artifact-export` automatically installs missing committed export dependencies the first time it sees a valid export request. If you need to recover manually, run this from the plugin root that contains `package.json` and `bun.lock`:
-
-   ```powershell
-   bun install --frozen-lockfile
-   ```
-
-   Never run that command in the project under test.
-
-2. Create `.qa/.env.local` in the project under test (copy `templates/env.local.example` or paste the block below) and fill in Jira and/or ADO credentials plus the test environment URL. `.qa/` is git-ignored — never commit real tokens.
+1. Create `.qa/.env.local` in the project under test (copy `templates/env.local.example` or paste the block below) and fill in Jira and/or ADO credentials plus the test environment URL. `.qa/` is git-ignored — never commit real tokens.
 
    ```dotenv
    # Ritus QA configuration — copy this file to .qa/.env.local and fill in values.
@@ -78,7 +70,7 @@ End-to-end QA workflow plus on-demand local exports:
    TEST_BASE_URL=https://staging.client-site.com
    ```
 
-3. Register the MCP servers in the **project under test's** `.mcp.json` (the plugin ships no `.mcp.json` — each project owns its config). Add this to the project's `.mcp.json`:
+2. Register the MCP servers in the **project under test's** `.mcp.json` (the plugin ships no `.mcp.json` — each project owns its config). Add this to the project's `.mcp.json`:
 
    ```json
    {
