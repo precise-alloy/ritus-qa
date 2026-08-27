@@ -71,7 +71,7 @@ A media item is an ordinary plan item whose content type is one the site declare
 
 Other items then point at it the same way they point at anything else — `{ "ref": "hero" }` for a content reference, `[{ "ref": "hero" }]` for a ContentArea. Nothing about referencing is media-specific.
 
-**Referencing is free; `count` is not.** One media item referenced by twenty pages is one item and one file in the CMS. `count: 20` on the media item is twenty images with twenty binaries. Reach for `count` only when the case needs images it can tell apart.
+**Referencing is free; `count` is not.** One media item referenced by twenty pages is one item and one file in the CMS. `count: 20` on the media item is twenty images with twenty binaries. Reach for `count` only when the case needs images it can tell apart. `count` is capped at 1000, and the generator also enforces a budget on total pixels across every image in a plan — about 139 images at the default size — so a plan that asks for hundreds of large images is rejected rather than left to block. A test-data plan should never come close to either.
 
 **State the size when the case turns on it.** The default is 1280×720. Content-type exports carry no dimension metadata, so the generator cannot infer that a property wants a square avatar or a portrait card — and neither can you from the property name. A case about cropping, aspect ratio, or a responsive breakpoint has to name the pixels; a case that just needs "an image present" should take the default.
 
@@ -83,7 +83,7 @@ Other items then point at it the same way they point at anything else — `{ "re
 
 **Thumbnails are the CMS's job.** The package deliberately carries no thumbnail: the CMS generates the 48×48 itself from the image, and shipping a placeholder would stop it doing so permanently. If the media list shows a generic icon after import, opening the item or running the **Clear Thumbnail Properties** scheduled job produces it. Say this in the handoff — an unexplained missing thumbnail gets filed as a site bug.
 
-**A media type whose base is not `Image`** — a generic `Media` or a `Video` type — still builds, with a warning. The CMS only auto-generates thumbnails for image types, so such an item may keep a generic icon. Prefer an `Image`-based type when the site has one.
+**A media type must be able to hold a PNG, or the plan is rejected.** A type that declares `supportedMediaExtensions` without `png`, and a `Video`-based type, are both **errors** — a video type given a still image is content that looks right and is wrong. A generic `Media` base still builds with a warning: it is the most common base in real exports and the export cannot prove either way, but the CMS only auto-generates thumbnails for image types, so such an item may keep a generic icon. Prefer an `Image`-based type when the site has one. `load_schema` and `describe_content_type` both list which media types are image-capable and which will be rejected, so read that rather than guessing from the name.
 
 ## Red flags
 
