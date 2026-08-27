@@ -1,6 +1,6 @@
 ---
 name: test-summary
-description: Use when the user asks to wrap up testing, summarize results, or write a test summary report (e.g. "write test summary", "tổng kết test", "tạo báo cáo test"). Aggregates execution results and bugs into a client-facing English summary.
+description: Use when the user asks to wrap up testing, summarize results, or write a test summary report (e.g. "write test summary", "wrap up testing", "create a test report"). Aggregates execution results and bugs into a client-facing English summary.
 ---
 
 # Test Summary

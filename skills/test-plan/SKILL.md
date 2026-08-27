@@ -1,6 +1,6 @@
 ---
 name: test-plan
-description: Use when the user asks to analyze a Jira/ADO ticket, understand a requirement, or create a test plan (e.g. "analyze ticket PROJ-123", "create a test plan", "lên plan test"). Fetches the ticket and produces a structured English test plan in .qa/<ticket-id>/<ticket-id>-plan.md.
+description: Use when the user asks to analyze a Jira/ADO ticket, understand a requirement, or create a test plan (e.g. "analyze ticket PROJ-123", "create a test plan", "plan the testing"). Fetches the ticket and produces a structured English test plan in .qa/<ticket-id>/<ticket-id>-plan.md.
 ---
 
 # Test Plan
@@ -36,7 +36,7 @@ A ticket reference: Jira key (`PROJ-123`), Jira URL, ADO work item id, or ADO UR
    bun "<plugin-root>\scripts\fetch-ticket.ts" <ticket>
    ```
 
-   On non-zero exit, relay the Vietnamese error to the user verbatim and stop. Common causes: missing/expired PAT in `.qa/.env.local`, wrong base URL, no network/VPN.
+   On non-zero exit, relay the error to the user verbatim and stop. Common causes: missing/expired PAT in `.qa/.env.local`, wrong base URL, no network/VPN.
 
    The output already carries link metadata — Jira `issuelinks` (with `type.inward`/`type.outward` + `inwardIssue`/`outwardIssue`), `parent`, `subtasks`; ADO `relations` (`rel` + `url`). You do NOT need a separate call to discover them.
 

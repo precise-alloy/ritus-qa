@@ -1,6 +1,6 @@
 ---
 name: ui-ux-check
-description: Use when the user asks to check UI, verify responsive behavior, compare the page against Figma design, or run accessibility basics (e.g. "check UI", "test responsive", "so sánh với design", "kiểm tra giao diện"). Measures with numbers via DOM/computed styles — never judges screenshots by eye.
+description: Use when the user asks to check UI, verify responsive behavior, compare the page against Figma design, or run accessibility basics (e.g. "check UI", "test responsive", "compare against the design", "review the layout"). Measures with numbers via DOM/computed styles — never judges screenshots by eye.
 ---
 
 # UI/UX Check

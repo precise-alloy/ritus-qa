@@ -1,6 +1,6 @@
 ---
 name: qa-workflow
-description: Use when the user wants to start or run the full QA process for a ticket end to end (e.g. "start QA for PROJ-123", "test ticket này", "QA ticket 12345"). Orchestrates the other ritus-qa skills stage by stage, asking before each transition.
+description: Use when the user wants to start or run the full QA process for a ticket end to end (e.g. "start QA for PROJ-123", "test this ticket", "QA ticket 12345"). Orchestrates the other ritus-qa skills stage by stage, asking before each transition.
 ---
 
 # QA Workflow (orchestrator)
@@ -46,7 +46,7 @@ test-plan → test-case-design → cms-test-data (only if the ticket needs CMS c
 > **Two roots.** `<project-root>` is the project under test — the current directory for every command, and where `.qa/` lives. `<plugin-root>` is the installed ritus-qa directory holding this skill, `scripts/`, and `templates/`. Those assets are NOT in the project: always read templates and invoke scripts by their plugin-root path while the current directory stays `<project-root>`. Run scripts with `bun`, never `node`.
 
 1. Ask for the ticket id if not provided.
-2. **Setup check (first run only):** confirm `.qa/.env.local` exists — if not, tell the user to copy `<plugin-root>/templates/env.local.example` to `.qa/.env.local` and fill in values, then stop. Confirm the tracker credentials match the ticket type (Jira vs ADO) by attempting the fetch in stage 1 and relaying any Vietnamese error verbatim.
+2. **Setup check (first run only):** confirm `.qa/.env.local` exists — if not, tell the user to copy `<plugin-root>/templates/env.local.example` to `.qa/.env.local` and fill in values, then stop. Confirm the tracker credentials match the ticket type (Jira vs ADO) by attempting the fetch in stage 1 and relaying any error verbatim.
 3. **Round check.** If `.qa/<id>/execution-results.md` exists, this ticket has been tested before: the current round is the highest `Round` value in that file plus one. Say so before starting — "This is round 2; round 1 ran on <date> with N passed, M failed" — so the user knows the pipeline will amend artifacts rather than create them.
 
    If `execution-results.md` is absent but `.qa/<id>/ticket.json` exists, the ticket was planned before and never executed. Say that instead of announcing round 1: `test-plan` will treat this as a later round and diff the saved ticket, so promising a clean first run would be wrong.

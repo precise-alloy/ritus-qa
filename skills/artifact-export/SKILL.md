@@ -1,6 +1,6 @@
 ---
 name: artifact-export
-description: Use when the user asks to export or convert QA artifacts to Excel/XLSX, spreadsheet, DOCX, or PDF (e.g. "export test cases to Excel", "convert the test plan to PDF", "xuất test case ra Excel", "xuất test plan sang DOCX", "chuyển test plan sang PDF"). Exports existing local Markdown artifacts without regenerating content.
+description: Use when the user asks to export or convert QA artifacts to Excel/XLSX, spreadsheet, DOCX, or PDF (e.g. "export test cases to Excel", "convert the test plan to PDF", "export the test plan to DOCX"). Exports existing local Markdown artifacts without regenerating content.
 ---
 
 # Artifact Export

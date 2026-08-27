@@ -1,6 +1,6 @@
 ---
 name: bug-report
-description: Use when the user asks to write, file, or document a bug (e.g. "write a bug", "report this bug", "tạo bug report"). Produces a standardized English bug report under .qa/<ticket-id>/bugs/.
+description: Use when the user asks to write, file, or document a bug (e.g. "write a bug", "report this bug", "create a bug report"). Produces a standardized English bug report under .qa/<ticket-id>/bugs/.
 ---
 
 # Bug Report

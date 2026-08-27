@@ -1,6 +1,6 @@
 ---
 name: auto-execute
-description: Use when the user asks to run, execute, or perform test cases in a browser (e.g. "run the tests", "execute test cases", "chạy test PROJ-123"). Drives a real browser via Playwright MCP, records pass/fail with evidence, hands off manual cases, and generates a Playwright regression script.
+description: Use when the user asks to run, execute, or perform test cases in a browser (e.g. "run the tests", "execute test cases", "run tests for PROJ-123"). Drives a real browser via Playwright MCP, records pass/fail with evidence, hands off manual cases, and generates a Playwright regression script.
 ---
 
 # Auto Execute

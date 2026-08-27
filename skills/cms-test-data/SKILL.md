@@ -1,6 +1,6 @@
 ---
 name: cms-test-data
-description: Use when the user asks to create, generate, or prepare CMS test data for a ticket — pages, blocks and content trees for an Optimizely CMS 12 site (e.g. "generate test data", "create test content for PROJ-123", "tạo test data", "sinh dữ liệu test cho ticket này"). Produces an importable .episerverdata package from the ticket's test cases; the QA imports it in the CMS.
+description: Use when the user asks to create, generate, or prepare CMS test data for a ticket — pages, blocks and content trees for an Optimizely CMS 12 site (e.g. "generate test data", "create test content for PROJ-123", "prepare CMS data for this ticket"). Produces an importable .episerverdata package from the ticket's test cases; the QA imports it in the CMS.
 ---
 
 # CMS test data (Optimizely CMS 12)
@@ -73,7 +73,7 @@ Choosing the right content type is the easy half. The values decide whether the 
 
 **An empty state is data too.** A case about "no results" needs a real item that yields nothing — an empty ContentArea, a category with no children — and it needs to exist before the QA can test it. Do not leave it to them to delete something.
 
-**Use text that survives the round trip.** Encoding bugs live in Vietnamese diacritics, `&`, quotes and angle brackets, and ASCII-only filler never finds them. When the site under test serves Vietnamese content, at least one item should carry real Vietnamese text. Keep it plausible rather than lorem ipsum where that costs nothing: a QA reviewing `test-data.md` spots a wrong value faster in content that reads like the site's own.
+**Use text that survives the round trip.** Encoding bugs live in accented and non-Latin characters, `&`, quotes and angle brackets, and ASCII-only filler never finds them. When the site under test serves non-English content, at least one item should carry real text in that language. Keep it plausible rather than lorem ipsum where that costs nothing: a QA reviewing `test-data.md` spots a wrong value faster in content that reads like the site's own.
 
 **Give an image the dimensions the case is about.** A media item takes an optional `image: { width, height }` and the generator writes a placeholder PNG at that size, defaulting to 1280×720. The size is never inferred from the property — content-type exports carry no dimension metadata — so a case about a 16:9 hero, a square avatar, or a portrait card has to say so. A layout bug that only appears at the wrong aspect ratio cannot fail against a default. Where the case does not turn on dimensions, leave `image` off and take the default rather than inventing a number.
 

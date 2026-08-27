@@ -1,6 +1,6 @@
 ---
 name: cms-content-check
-description: Use when the user asks to verify CMS content against the frontend, check Optimizely edit mode properties, or validate page/block configuration (e.g. "check CMS content", "verify this page in CMS", "đối chiếu CMS với FE"). Provides an Optimizely-specific checklist and walks through it with the QA.
+description: Use when the user asks to verify CMS content against the frontend, check Optimizely edit mode properties, or validate page/block configuration (e.g. "check CMS content", "verify this page in CMS", "compare CMS against the frontend"). Provides an Optimizely-specific checklist and walks through it with the QA.
 ---
 
 # CMS Content Check

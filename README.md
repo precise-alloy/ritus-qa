@@ -17,6 +17,81 @@ End-to-end QA workflow plus on-demand local exports:
 9. **artifact-export** — export existing Markdown QA artifacts to supported client-shareable formats on demand
 10. **qa-workflow** — orchestrates the QA flow per ticket
 
+## How the pipeline works
+
+Written for QA engineers. You do not need to know anything about AI to use this.
+
+### What you are actually working with
+
+"The agent" is Claude Code or GitHub Copilot CLI — a chat window in your terminal. This repo adds no intelligence to it; it adds **written procedures**. Each skill is a checklist that tells the agent what to do, what to write down, and — most importantly — **when to stop and ask you**.
+
+Everything it produces is an ordinary Markdown file under `.qa/<ticket-id>/` in the project you are testing. Nothing goes into a database or the cloud. You can open, edit, or delete any of those files at any time, and the next stage reads your edited version.
+
+You are still the tester. The agent does the typing, the clicking, and the paperwork; every judgment call stays yours.
+
+### The flow
+
+```mermaid
+flowchart TD
+    P1["1. test-plan<br/>reads the ticket, writes the plan"]
+    H1{{"YOU approve the plan"}}
+    P2["2. test-case-design<br/>writes the test cases"]
+    H2{{"YOU approve the cases"}}
+    Q{"Do the cases need CMS content<br/>the environment does not have yet?"}
+    P3["3. cms-test-data<br/>lists the content it intends to create"]
+    H3{{"YOU approve the content list"}}
+    P3B["builds an .episerverdata file"]
+    H4{{"YOU import it in the CMS<br/>and check it landed"}}
+    P4["4. auto-execute<br/>runs cases in a real browser"]
+    H5{{"YOU test the manual hand-off list<br/>and give the verdicts"}}
+    P5["5. cms-content-check / ui-ux-check<br/>only if the plan scoped them"]
+    P6["6. bug-report<br/>one Markdown file per finding"]
+    P7["7. test-summary<br/>the client-facing report"]
+    P8["optional. artifact-export<br/>Excel / Word / PDF"]
+
+    P1 --> H1 --> P2 --> H2 --> Q
+    Q -- yes --> P3 --> H3 --> P3B --> H4 --> P4
+    Q -- no --> P4
+    P4 --> H5 --> P5 --> P6 --> P7 --> P8
+```
+
+### Who does what
+
+| Stage | What the agent does | What you do |
+|---|---|---|
+| **test-plan** | Reads the ticket from Jira/ADO — read-only — and writes a plan: scope, risks, what to test and how | Read it and correct anything it misunderstood. It is your file |
+| **test-case-design** | Turns the plan into a numbered test case table and labels each case `automatable`, `assisted`, or `manual` | Check the cases cover what actually matters. On a re-test, approve its rerun / skip / amend list — a wrong `skip` is the one mistake nothing else catches |
+| **cms-test-data** | Works out what CMS content the cases need and lists it in `test-data.md` *before* building anything | Approve or amend the list, then import the generated file yourself under **Admin → Import Data** |
+| **auto-execute** | Opens a real browser and runs the `automatable` cases, checking the page's actual content. Pauses on `assisted` cases at the point a human is required (login, captcha, payment) | Take over when it pauses. Then work through the manual hand-off list and record your verdicts |
+| **cms-content-check** / **ui-ux-check** | Walks an Optimizely edit-mode checklist; measures spacing, sizes and breakpoints as numbers read off the page | Answer the checklist questions and give the visual verdicts |
+| **bug-report** | Writes a standard bug report per confirmed finding into `bugs/` | Confirm it is genuinely a bug first, then copy it into Jira/ADO yourself |
+| **test-summary** | Aggregates this round's results and open bugs into a client-facing summary | Read it before it goes anywhere. You own what reaches the client |
+
+### Where it stops and waits for you
+
+It never chains stages silently. Before every transition it shows one line — what it produced and where — and waits for your go-ahead. Four of those stops are hard ones:
+
+- **Before it changes existing test cases on a re-test.** It shows you what it would rerun, skip, amend, or retire, with a reason per case, and does nothing until you approve.
+- **Before it builds a CMS package.** You see the full list of content and property values first, including the fields it knows it cannot fill.
+- **After it builds the package.** It waits while you import it and confirm the content is really there.
+- **After the browser run.** Cases it could not judge come back to you as a hand-off list with screenshots — and, where a Figma link exists, the design export next to them.
+
+You can skip any stage by saying so ("skip the UI check"). The skip is recorded in the summary's Remaining Risks, so nobody is misled about what was covered.
+
+### What it will not do
+
+- **It never writes to Jira or Azure DevOps.** It only reads the ticket. Filing bugs in the tracker stays a manual step.
+- **It never touches the CMS.** It writes a file; you import it.
+- **It never uploads anything.** Exports stay local under `.qa/<ticket-id>/exports/`.
+- **It never judges a screenshot by eye.** If confirming a result needs a human to look at it, the case is demoted to `manual` and handed to you with evidence — it will not guess.
+- **A `pass` means one narrow thing:** the specific check it wrote held true. It does not mean the page looks right. That verdict is only ever yours.
+- **It never invents a value it cannot verify.** Fields the CMS generator has no proven way to fill are left empty and listed by name, so a blank in the CMS is not mistaken for a site bug.
+- **It never deletes a test case.** Retired cases move to a `## Deprecated` section and IDs are never reused, so history stays readable.
+
+### If it gets something wrong
+
+Edit the Markdown. Every artifact is a plain file, later stages read whatever is in it, and your edits survive re-runs and exports. You can also run any stage on its own — "write test cases for PROJ-123" — without going through the whole pipeline.
+
 ## Prerequisites
 
 - [Bun](https://bun.sh) 1.3+

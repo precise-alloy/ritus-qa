@@ -1,6 +1,6 @@
 ---
 name: test-case-design
-description: Use when the user asks to write, generate, or design test cases for a ticket (e.g. "write test cases", "sinh test case", "tạo test case cho PROJ-123"). Reads the test plan and produces a labeled test case table in .qa/<ticket-id>/<ticket-id>-test-cases.md.
+description: Use when the user asks to write, generate, or design test cases for a ticket (e.g. "write test cases", "generate test cases", "create test cases for PROJ-123"). Reads the test plan and produces a labeled test case table in .qa/<ticket-id>/<ticket-id>-test-cases.md.
 ---
 
 # Test Case Design
