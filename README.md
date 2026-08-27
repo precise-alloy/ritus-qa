@@ -112,13 +112,15 @@ If the diff shows nothing changed and every case passed, the workflow says so an
 
 `cms-test-data` reads the ticket's test cases and plans the content they need. It writes `.qa/<ticket-id>/test-data/test-data.md` — the review surface, listing every item with the property values it will be given — plus `content-plan.json` for the generator, and asks the QA to approve the data. Only then does it build `.qa/<ticket-id>/test-data/<ticket-id>.episerverdata`. The generator never touches the CMS: the QA exports the schema once, and imports the package under **Admin → Import Data**, choosing the destination there.
 
-Supported: pages, blocks, nested page trees, text, HTML, ContentArea, content references, and `{{date:±Nd}}` / `{{date:±Nh}}` / `{{date:±Nm}}` tokens for dates relative to now.
+Supported: pages, blocks, nested page trees, raster image media, text, HTML, ContentArea, content references, and `{{date:±Nd}}` / `{{date:±Nh}}` / `{{date:±Nm}}` tokens for dates relative to now.
 
-Not supported in v1 — plan scenarios accordingly:
+Images are generated as placeholder PNGs at whatever size the plan asks for, defaulting to 1280×720. One image referenced by many pages stays one item and one file. The package carries no thumbnail on purpose — the CMS generates it from the image after import.
+
+Not supported — plan scenarios accordingly:
 
 | Feature | Status |
 |---|---|
-| Media (images, video, files) | Not generated |
+| SVG, PDF and video media | Not generated; the CMS cannot rasterise a thumbnail for them |
 | Inline block properties (a property whose type *is* a block) | Dropped with a warning; blocks inside a ContentArea work normally |
 | Unpublished content | Everything imports as published |
 | Multiple languages | One language per package, `en` by default |
