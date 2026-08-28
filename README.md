@@ -187,21 +187,11 @@ If the diff shows nothing changed and every case passed, the workflow says so an
 
 `cms-test-data` reads the ticket's test cases and plans the content they need. It writes `.qa/<ticket-id>/test-data/test-data.md` — the review surface, listing every item with the property values it will be given — plus `content-plan.json` for the generator, and asks the QA to approve the data. Only then does it build `.qa/<ticket-id>/test-data/<ticket-id>.episerverdata`. The generator never touches the CMS: the QA exports the schema once, and imports the package under **Admin → Import Data**, choosing the destination there.
 
-Supported: pages, blocks, nested page trees, raster image media, text, HTML, ContentArea, content references, and `{{date:±Nd}}` / `{{date:±Nh}}` / `{{date:±Nm}}` tokens for dates relative to now.
+Broadly: pages, blocks, nested page trees, raster image media, and the common property kinds — text, HTML, ContentArea, content references and link collections — plus `{{date:±Nd}}` / `{{date:±Nh}}` / `{{date:±Nm}}` tokens for dates relative to now. Images are generated as placeholder PNGs at whatever size the plan asks for, and one image referenced by many pages stays one item and one file.
 
-Images are generated as placeholder PNGs at whatever size the plan asks for, defaulting to 1280×720. One image referenced by many pages stays one item and one file. The package carries no thumbnail on purpose — the CMS generates it from the image after import.
+Some things it deliberately does not produce — SVG, PDF and video media, inline block properties, unpublished content, more than one language — and any property type it has no proven sample for is written empty with a warning rather than guessed. `test-data.md` lists every such field so a blank value in the CMS is not mistaken for a site bug.
 
-Not supported — plan scenarios accordingly:
-
-| Feature | Status |
-|---|---|
-| SVG, PDF and video media | Not generated; the CMS cannot rasterise a thumbnail for them |
-| Inline block properties (a property whose type *is* a block) | Dropped with a warning; blocks inside a ContentArea work normally |
-| Unpublished content | Everything imports as published |
-| Multiple languages | One language per package, `en` by default |
-| `Category`, untyped `Json` | Always empty |
-
-Any property type the generator has no proven sample for is written empty with a warning rather than guessed. `test-data.md` lists every such field so a blank value in the CMS is not mistaken for a site bug.
+**The generator reports its own current capabilities.** Its `usage_guide` tool returns the authoritative list — what it produces, what it refuses, the limits it enforces, and how re-import behaves — rendered from the constants the code actually enforces. The skill reads that at run time, so this summary is an orientation for choosing whether to install the plugin, not a specification. Where the two differ, `usage_guide` is right.
 
 ### Where the generator lives
 

@@ -17,6 +17,8 @@ you  build_package                            ← never touches the CMS
 QA   Admin → Import Data (picks the destination)
 ```
 
+**This skill owns the workflow; the generator owns its own contract.** What the tool can and cannot produce, its limits, how to design values that can actually fail a test, image sizing, and what happens on re-import all come from the `usage_guide` tool at run time, rendered from the constants the generator enforces. Read it there rather than trusting a copy — including a copy in this file.
+
 ## TODO
 
 On invocation, create this todo list verbatim (session `todos` table) and mark items off as you complete them:
@@ -24,7 +26,8 @@ On invocation, create this todo list verbatim (session `todos` table) and mark i
 ```
 - [ ] Read <ticket-id>-test-cases.md Preconditions, propose the content list, get the user's confirmation
 - [ ] Check .qa/cms-schema/content-types.episerverdata and the optimizely-test-data MCP server
-- [ ] load_schema, then choose types with list_content_types / query_schema / describe_content_type
+- [ ] load_schema, then usage_guide before writing any plan
+- [ ] Choose types with list_content_types / query_schema / describe_content_type
 - [ ] Build the plan, validate_plan, fix every error
 - [ ] Write content-plan.json + test-data.md, walk the user through the data, get approval
 - [ ] build_package only after approval, then refresh test-data.md's Import section
@@ -47,41 +50,21 @@ Check both before the first tool call. Either one missing is a hard stop — pro
 
 2. **`load_schema`** with `.qa/cms-schema/content-types.episerverdata`. Every other tool fails until this succeeds; if `load_schema` errors, the file is probably corrupt or not a content-types export, so ask the QA to re-export it under **Admin → Export Data** with content types only rather than retrying.
 
-3. **Choose types the site actually has.** `list_content_types` filtered by `kind`, and by name when the ticket names something specific. Use `query_schema` before `describe_content_type` when you need metadata filters such as property names, captions, help text, `editorHint`, hidden fields, `DisplayEditUI=false`, `ExistsOnModel=false`, value kind, changed-since discovery, or page-tree child availability. Then `describe_content_type` for each type you intend to use — it lists every property, notes export limitations, explains skeleton omissions, and returns a working plan with correctly shaped placeholders, so edit that rather than writing a plan from scratch. If nothing matches what the ticket describes, say so and ask which type is meant. Never substitute a plausible-sounding one; see `references/tool-guide.md`.
+3. **`usage_guide`** before writing your first plan for this schema. It returns the generator's own contract — what it does not produce, the limits it enforces, how to design values a test can actually fail against, image sizing, and how re-import behaves. It takes no arguments and its numbers come from the code, so it is the authority when anything here or in your own memory disagrees with it.
 
-4. **Build the plan.** `planId` is the ticket id (`PROJ-123`), suffixed per scenario when one ticket needs genuinely independent sets (`PROJ-123-empty-state`). Content GUIDs derive from `planId`, so re-importing the same `planId` updates the same content instead of creating a second copy — right while iterating, wrong when the QA wants a fresh set, and `planId` is the only control for that. Name items so the QA can find and delete them in the CMS tree: `PROJ-123 — search empty state 1`. Generate what the cases need and no more; use `count` with `{{i}}` instead of repeating near-identical items by hand. Choose the property values with **Designing the values** below — the values are what decide whether the data can test anything.
+4. **Choose types the site actually has.** `list_content_types` filtered by `kind`, and by name when the ticket names something specific. Use `query_schema` before `describe_content_type` when you need metadata filters such as property names, captions, help text, `editorHint`, hidden fields, `DisplayEditUI=false`, `ExistsOnModel=false`, value kind, changed-since discovery, or page-tree child availability. Then `describe_content_type` for each type you intend to use — its `skeleton` is a working plan with correctly shaped placeholders, so edit that rather than writing one from scratch. If nothing matches what the ticket describes, say so and ask which type is meant.
 
-5. **`validate_plan`.** Errors name the property and the shape expected — fix them and revalidate rather than guessing. Its warnings mean a supplied value will not be applied as given; use `describe_content_type` and `query_schema` notes for the broader empty-field and caution list in step 6. `build_package` can add the same drop warnings, so keep the artifact in sync instead of treating a later warning as new behavior.
+5. **Build the plan.** `planId` is the ticket id (`PROJ-123`), suffixed per scenario when one ticket needs genuinely independent sets (`PROJ-123-empty-state`). Name items so the QA can find and delete them in the CMS tree: `PROJ-123 — search empty state 1`. Generate what the cases need and no more. Derive the property values from what each case asserts — `usage_guide`'s value-design guidance is the reference, and the values are what decide whether the data can test anything.
 
-6. **Write the review artifacts.** `content-plan.json` and `test-data.md` (below). Nothing has been built yet and nothing is sent to the CMS — these two files exist so the QA can judge the data before a package is produced.
+6. **`validate_plan`.** Errors name the property and the shape expected — fix them and revalidate rather than guessing. Warnings do not block; read them together with the `describe_content_type` and `query_schema` notes to build the empty-field list for step 8. `build_package` can report warnings the validation did not, so reconcile rather than treating a later warning as new behaviour.
 
-7. **Get the data approved.** Walk the user through `test-data.md` — the items, their actual property values, and the fields that will be empty — and ask whether the content is right or needs changing. Act on what they say: adjust the plan, re-run `validate_plan`, rewrite both files, and ask again. Do not call `build_package` until they approve; an unapproved package wastes the QA's import, and a wrong one wastes their time twice.
+7. **Write the review artifacts.** `content-plan.json` and `test-data.md` (below). Nothing has been built yet and nothing is sent to the CMS — these two files exist so the QA can judge the data before a package is produced.
 
-8. **Build, then reconcile.** `build_package` with `outputPath` `.qa/<ticket-id>/test-data/<ticket-id>.episerverdata`; optionally run `inspect_package` on the result to confirm the content tree. Fill in `test-data.md`'s **Import** section, and if the build reported a warning the validation did not, add it to **Fields left empty** rather than leaving the file stale.
+8. **Get the data approved.** Walk the user through `test-data.md` — the items, their actual property values, and the fields that will be empty — and ask whether the content is right or needs changing. Act on what they say: adjust the plan, re-run `validate_plan`, rewrite both files, and ask again. Do not call `build_package` until they approve; an unapproved package wastes the QA's import, and a wrong one wastes their time twice.
 
-9. **Hand off, then hold.** Give the user the package path, the import instructions — **Admin → Import Data**, and the QA picks the destination there — and the list of fields left empty. Then stop. The QA imports and verifies it themselves; continue to `auto-execute` only when they confirm.
+9. **Build, then reconcile.** `build_package` with `outputPath` `.qa/<ticket-id>/test-data/<ticket-id>.episerverdata`; optionally run `inspect_package` on the result to confirm the content tree. Fill in `test-data.md`'s **Import** section, and if the build reported a warning the validation did not, add it to **Fields left empty** rather than leaving the file stale.
 
-## Designing the values
-
-Choosing the right content type is the easy half. The values decide whether the data can tell a passing build from a failing one, and that is the half QAs notice only after the import.
-
-**Derive every value from the case's expected result.** Read what the case asserts, then ask what the data must look like for that assertion to be able to fail. A case that expects "newest first" cannot fail against three articles published the same day — the order looks right whichever way the site sorts. Give them `{{date:-1d}}`, `{{date:-8d}}`, `{{date:-30d}}` and create them out of order, so a broken sort is visible.
-
-**Make the items distinguishable in the way the case checks.** Distinct names are enough when the case counts items; they are not enough when it checks which item rendered where. If the case reads a teaser, the teasers must differ. Identical body text across three items hides exactly the bug the case exists to catch.
-
-**Generate past the boundary the case names.** "Shows the first 5" needs more than five, or the truncation never happens. "Falls back when there is no image" needs the item with no image, not a populated one the QA has to empty by hand. A length limit needs one item at the limit and, when the case mentions truncation, one over it.
-
-**An empty state is data too.** A case about "no results" needs a real item that yields nothing — an empty ContentArea, a category with no children — and it needs to exist before the QA can test it. Do not leave it to them to delete something.
-
-**Use text that survives the round trip.** Encoding bugs live in accented and non-Latin characters, `&`, quotes and angle brackets, and ASCII-only filler never finds them. When the site under test serves non-English content, at least one item should carry real text in that language. Keep it plausible rather than lorem ipsum where that costs nothing: a QA reviewing `test-data.md` spots a wrong value faster in content that reads like the site's own.
-
-**Give an image the dimensions the case is about.** A media item takes an optional `image: { width, height }` and the generator writes a placeholder PNG at that size, defaulting to 1280×720. The size is never inferred from the property — content-type exports carry no dimension metadata — so a case about a 16:9 hero, a square avatar, or a portrait card has to say so. A layout bug that only appears at the wrong aspect ratio cannot fail against a default. Where the case does not turn on dimensions, leave `image` off and take the default rather than inventing a number.
-
-The placeholder is a test pattern — a circle, a square grid, corner brackets, and the size printed on it — chosen so a QA can see a layout bug in it. A stretched image shows an ellipse instead of a circle; a cropped one is missing corner brackets; a wrong rendition disagrees with its own printed size. Say so in `test-data.md` when a case is about cropping or aspect ratio, so the QA knows what to look at rather than seeing an odd-looking graphic.
-
-The bytes are always PNG, whatever the item is named, and the URL segment uses `.png` too. Name a media item after the ticket and the case as you would any other item: media lands in the site's global assets folder, not in the plan's block folder, so the name is how the QA finds it.
-
-**Say what a value is for when it is not obvious.** `{{date:-400d}}` in an archive case, a title at exactly 60 characters for an SEO rule — note the intent in `test-data.md`'s Item detail so the QA can tell a deliberate boundary from a typo.
+10. **Hand off, then hold.** Give the user the package path, the import instructions — **Admin → Import Data**, and the QA picks the destination there — and the list of fields left empty. Then stop. The QA imports and verifies it themselves; continue to `auto-execute` only when they confirm.
 
 ## Artifacts
 
@@ -89,37 +72,31 @@ All under `.qa/<ticket-id>/test-data/`:
 
 | File | Written | For | Content |
 |---|---|---|---|
-| `test-data.md` | step 6 | the QA | The review surface. Everything needed to judge the data before it is built. |
-| `content-plan.json` | step 6 | the generator | The exact plan sent to `build_package` — re-runnable and diffable across iterations. **This is not the review surface**: never ask the QA to read or approve the JSON. |
-| `<ticket-id>.episerverdata` | step 8 | the CMS | The importable package. Only exists after approval. |
+| `test-data.md` | step 7 | the QA | The review surface. Everything needed to judge the data before it is built. |
+| `content-plan.json` | step 7 | the generator | The exact plan sent to `build_package` — re-runnable and diffable across iterations. **This is not the review surface**: never ask the QA to read or approve the JSON. |
+| `<ticket-id>.episerverdata` | step 9 | the CMS | The importable package. Only exists after approval. |
 
 `test-data.md` carries six sections, in this order:
 
-- **Scenario** — the `planId`, the language branch, one line on what this data is for, and the test case IDs it serves. Note that re-importing the same `planId` updates the same content rather than creating a second copy, and that changing the `planId` is what produces a separate set.
+- **Scenario** — the `planId`, the language branch, one line on what this data is for, and the test case IDs it serves. State what re-importing this package does and what produces a separate set instead, taking the identity rules from `usage_guide` rather than from memory.
 - **What will be created** — an indented tree of the items, so the QA sees the shape and the parent/child nesting at a glance.
 - **Item detail** — one subsection per item: its type, name, URL segment, and a `| Property | Value | Why |` table listing **every property the plan sets, with the value it sets**. This is the section that makes the data reviewable — an item's name alone tells the QA nothing about whether the content is right. Truncate long HTML or text to its first ~100 characters and mark it `…`; show `{{i}}` / `{{date:…}}` tokens as written *and* what they resolve to. For a media item, give its pixel size on the same footing as a property value — that is the only thing a QA can review about a generated placeholder. Fill **Why** only where the value is a deliberate choice — a boundary length, a date that must sort last, an aspect ratio the layout depends on, text chosen to exercise encoding — so a QA can tell an intentional edge case from a typo. Leave it blank for ordinary filler.
-- **Fields left empty** — one row per field the generator will not fill: content type, property, why (unproven serialisation, inline block serialization, a media format the generator does not produce, or another unsupported export limitation), and whether the test case actually needs it. Include caution-only notes that affect QA setup, such as `DisplayEditUI=false`, `ExistsOnModel=false`, and integer fields whose enum labels are absent from the export. A field the case depends on is a gap to raise now, not after the import.
+- **Fields left empty** — one row per field the generator will not fill: content type, property, why, and whether the test case actually needs it. Take the reasons from `describe_content_type`'s notes and `usage_guide`'s limitations rather than paraphrasing them here. Include caution-only notes that affect QA setup, such as `DisplayEditUI=false`, `ExistsOnModel=false`, and integer fields whose enum labels are absent from the export. A field the case depends on is a gap to raise now, not after the import.
 - **Coverage** — a `| Test case | Items it depends on |` table, plus any precondition you could not satisfy. This is where the QA sees that a case they care about got nothing.
-- **Import** — the package path and the **Admin → Import Data** steps. Left as "not built yet — pending approval" until step 8 fills it in. Two facts belong here whenever the QA may import more than once, because both are surprising and neither is visible in the CMS until it happens:
-  - **Pick the same destination every time.** Re-importing the same `planId` updates the content in place, which is what makes iteration cheap — but that same recognition means a *different* destination moves the existing items there rather than copying them. They disappear from where they were. Choosing the same destination avoids it entirely.
-  - **Media is pinned to the site's global assets folder** whatever destination is chosen, so images never move and are always found in the same place.
+- **Import** — the package path and the **Admin → Import Data** steps. Left as "not built yet — pending approval" until step 9 fills it in. Whenever the QA may import more than once, this section must also carry the re-import behaviour `usage_guide` describes: what a second import does, what picking a different destination does to content that already exists, and where media lands regardless of the destination. None of it is visible in the CMS until it happens, and a QA who was not warned reads it as data loss. When the package contains media, add what `usage_guide` says about thumbnails — without that line a QA files a missing thumbnail as a site bug.
 
-  When the package contains media, add one more line: the CMS generates each image's thumbnail itself rather than the package carrying one, so if the media list shows a generic file icon, opening the item — or running the **Clear Thumbnail Properties** scheduled job — makes it appear. Without that line a QA files the missing thumbnail as a site bug.
+  Quote these from `usage_guide` at the time you write the file. They are the facts most likely to drift, and a stale copy here is worse than no copy.
 
 ## Rules
 
 - **No package before approval.** `test-data.md` is written first and the user approves the data there. Building early is not a harmless head start: the QA imports whatever you hand them, so a package built on unreviewed data costs them an import, a cleanup, and a second review.
 - **Review the values, not the item names.** "Three article pages" tells the QA nothing. Show what each property is actually set to, and let them catch a heading, date, or reference that does not match the case.
-- **Data that cannot fail is not test data.** Before you write the plan out, take each case and ask what the site would have to get wrong for this data to look wrong. If nothing comes to mind, the values are decoration — see **Designing the values**.
+- **Data that cannot fail is not test data.** Before you write the plan out, take each case and ask what the site would have to get wrong for this data to look wrong. If nothing comes to mind, the values are decoration — `usage_guide` covers how to fix that.
 - **Never invent a content type.** Read them from `list_content_types` or `query_schema`. A wrong type generates content that tests nothing.
-- **An "unproven" warning is not a failure.** It means the generator refused to guess a serialisation it cannot prove and left the field empty. Report those fields — the QA is looking at a CMS page, not at your warnings, and an unexplained blank field gets filed as a bug against the site. Never retry to make the warning disappear.
-- **Never guess enum values.** The export has no enum labels or value mapping. Every integer property is int-backed, and if CMS edit mode presents it as a selection, QA must confirm legal values there.
-- **Reference an image, do not multiply it.** A media item pointed at by twenty pages is still one item and one binary — `{"ref": "<key>"}` costs nothing, whatever the referencing types are. `count` on the media item itself creates that many separate images, each with its own file. Use `count` when the case needs images it can tell apart; use one item and many references when the case just needs the same image in several places.
-- **Do not treat page-tree child availability as ContentArea allowed types.** The exported `<availablecontenttypes>` section describes which page types can be children in the page tree only. ContentArea `[AllowedTypes]` is absent from the export.
-- **Treat `editorHint` as site-specific.** The tool reports the hint string verbatim; its meaning varies by site and installed plugin, so do not hard-code vendor or DAM assumptions.
-- **Never say where pages will land.** The QA picks the destination at import time. Blocks and media are the exception and you should say so, because it is where the QA goes to delete them: blocks are collected into the plan's folder, and media items land in the site's global assets folder regardless of the destination chosen at import.
-- **Say early what the generator cannot do**, whenever the scenario depends on it: SVG, PDF and video media, inline block properties (a property whose type *is* a block — blocks inside a **ContentArea** work normally), unpublished content, more than one language, `Category`, untyped `Json`, enum-label recovery, ContentArea `[AllowedTypes]` recovery, and `[ScaffoldColumn]` recovery. Working: pages, blocks, nested page trees, raster image media, text, HTML, ContentArea, content references, and `{{date:±Nd}}` / `{{date:±Nh}}` / `{{date:±Nm}}` tokens for dates relative to now.
-- Read `references/tool-guide.md` when choosing types, sizing the data, or interpreting warnings.
+- **Report every field the generator leaves empty.** The QA is looking at a CMS page, not at your warnings, and an unexplained blank field gets filed as a bug against the site. A warning that a value was dropped is the generator refusing to guess — never retry to make it disappear.
+- **Never say where pages will land.** The QA picks the destination at import time. Say where blocks and media go instead, because that is where the QA goes to delete them.
+- **Say early what the generator cannot do**, whenever the scenario depends on it. `load_schema` and `usage_guide` both report the current limitations; take them from there, because this file is not the source of truth for them.
+- **The tool's own guide wins.** If anything in this file disagrees with `usage_guide`, follow `usage_guide` and tell the user this file needs updating. Its content is rendered from the constants the generator enforces; this file is hand-written and can go stale.
 
 ## Handoff
 
