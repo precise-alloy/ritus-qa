@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "optimizely-test-data": {
+    "cms-test-data": {
       "command": "bunx",
-      "args": ["optimizely-test-data-mcp@0.2.0"],
+      "args": ["cms-test-data-mcp@0.0.1"],
       "tools": ["*"]
     }
   }

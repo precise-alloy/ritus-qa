@@ -25,7 +25,7 @@ On invocation, create this todo list verbatim (session `todos` table) and mark i
 
 ```
 - [ ] Read <ticket-id>-test-cases.md Preconditions, propose the content list, get the user's confirmation
-- [ ] Check .qa/cms-schema/content-types.episerverdata and the optimizely-test-data MCP server
+- [ ] Check .qa/cms-schema/content-types.episerverdata and the cms-test-data MCP server
 - [ ] load_schema, then usage_guide before writing any plan
 - [ ] Choose types with list_content_types / query_schema / describe_content_type
 - [ ] Build the plan, validate_plan, fix every error
@@ -42,7 +42,7 @@ Check both before the first tool call. Either one missing is a hard stop — pro
 
    Ask for content types, never for a content export. A content export carries the customer's real page data, and you do not need it — everything the generator classifies comes from the type definitions.
 
-2. **MCP server** `optimizely-test-data`. The plugin declares it, so there is nothing for the QA to register — the host starts it when the plugin is enabled. If its tools are not available, the plugin is disabled or `bun` is not on the `PATH`; say which and stop. Do not fall back to running the generator any other way.
+2. **MCP server** `cms-test-data`. The plugin declares it, so there is nothing for the QA to register — the host starts it when the plugin is enabled. If its tools are not available, the plugin is disabled or `bun` is not on the `PATH`; say which and stop. Do not fall back to running the generator any other way.
 
 ## Procedure
 

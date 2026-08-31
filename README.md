@@ -165,7 +165,7 @@ Edit the Markdown. Every artifact is a plain file, later stages read whatever is
    - The skills call the servers by the plain names `playwright` / `figma`. If the project already has a `playwright` server, merge the args above into it rather than adding a duplicate.
    - Playwright MCP allows all origins by default, so no origin flag is needed for testing across client environments.
    - Figma is optional — omit the `figma` block if the project has no designs to reference.
-   - **You do not register `"optimizely-test-data"` yourself.** The plugin bundles that server in its own `.mcp.json`, which runs the published npm package `optimizely-test-data-mcp` via `bunx`. The host starts it when the plugin is enabled; `bun` must be on your `PATH`. Only `playwright` and `figma` are yours to configure: they belong to the project under test, and MCP servers use last-wins precedence, so bundling them would override whatever the project already had under those names.
+   - **You do not register `"cms-test-data"` yourself.** The plugin bundles that server in its own `.mcp.json`, which runs the published npm package `cms-test-data-mcp` via `bunx`. The host starts it when the plugin is enabled; `bun` must be on your `PATH`. Only `playwright` and `figma` are yours to configure: they belong to the project under test, and MCP servers use last-wins precedence, so bundling them would override whatever the project already had under those names.
 
 ## Usage
 
@@ -195,7 +195,7 @@ Some things it deliberately does not produce — SVG, PDF and video media, inlin
 
 ### Where the generator lives
 
-The generator is developed and released from its own repository, [optimizely-test-data-mcp](https://github.com/precise-alloy/optimizely-test-data-mcp), and published to npm as `optimizely-test-data-mcp`. It is not part of this repo: it releases on its own cadence, and a plugin install is a copy of this repo without `node_modules`, so running the server from here would leave Bun auto-installing from its global cache — which fails on Windows.
+The generator is developed and released from its own repository, [cms-test-data-mcp](https://github.com/precise-alloy/cms-test-data-mcp), and published to npm as `cms-test-data-mcp`. It is not part of this repo: it releases on its own cadence, and a plugin install is a copy of this repo without `node_modules`, so running the server from here would leave Bun auto-installing from its global cache — which fails on Windows.
 
 To move to a newer generator, bump the pinned version in `.mcp.json`. Nothing else changes; `bun test` checks that the pin is an exact version rather than a floating one, because an unpinned spec is re-resolved on every session start (~11s) instead of being served from cache (~0.7s).
 

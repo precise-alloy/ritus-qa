@@ -25,23 +25,23 @@ test('the bundled .mcp.json ships only the plugin\'s own server, at a pinned ver
   const mcp = JSON.parse(readFileSync(join(root, '.mcp.json'), 'utf8')) as {
     mcpServers: Record<string, { command?: string; args?: string[] }>;
   };
-  expect(Object.keys(mcp.mcpServers)).toEqual(['optimizely-test-data']);
+  expect(Object.keys(mcp.mcpServers)).toEqual(['cms-test-data']);
 
   // The server runs from the published npm package, never from a path inside the
   // installed plugin: that directory has no node_modules, and Bun's auto-install
   // fails there on Windows.
-  const args = (mcp.mcpServers['optimizely-test-data']!.args ?? []).join(' ');
+  const args = (mcp.mcpServers['cms-test-data']!.args ?? []).join(' ');
   expect(args, '.mcp.json must not run the server from a plugin path').not.toContain('src/mcp');
   expect(args).not.toContain('PLUGIN_ROOT');
 
   // An unpinned spec (@latest, or no version at all) is re-resolved on every session
   // start — ~11s each time instead of ~0.7s from cache. The package is released from
   // its own repo, so nothing here can check the number is current; only that one is set.
-  const spec = (mcp.mcpServers['optimizely-test-data']!.args ?? []).find((a) =>
-    a.startsWith('optimizely-test-data-mcp@'),
+  const spec = (mcp.mcpServers['cms-test-data']!.args ?? []).find((a) =>
+    a.startsWith('cms-test-data-mcp@'),
   );
   expect(spec, '.mcp.json must pin an exact version of the MCP server').toMatch(
-    /^optimizely-test-data-mcp@\d+\.\d+\.\d+$/,
+    /^cms-test-data-mcp@\d+\.\d+\.\d+$/,
   );
 });
 
@@ -58,10 +58,10 @@ test('.gitignore still ignores .qa/', () => {
 
 test('README documents the MCP server, where it is developed, and the schema export path', () => {
   const readme = readFileSync(join(root, 'README.md'), 'utf8');
-  expect(readme).toContain('optimizely-test-data-mcp');
+  expect(readme).toContain('cms-test-data-mcp');
   expect(readme).toContain('bunx');
   expect(readme).toContain('.qa/cms-schema/content-types.episerverdata');
   // The server is released from its own repo now; a QA who needs to change it has
   // to be told where to go, or they will look for source that is not here.
-  expect(readme).toContain('github.com/precise-alloy/optimizely-test-data-mcp');
+  expect(readme).toContain('github.com/precise-alloy/cms-test-data-mcp');
 });
