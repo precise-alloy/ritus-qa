@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "cms-test-data": {
-      "command": "bunx",
-      "args": ["cms-test-data-mcp@0.0.1"],
+      "command": "npx",
+      "args": ["--yes", "cms-test-data-mcp@0.0.1"],
       "tools": ["*"]
     }
   }
