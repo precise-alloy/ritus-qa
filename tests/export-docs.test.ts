@@ -28,16 +28,6 @@ function extractMarkdownSentences(text: string): string[] {
   );
 }
 
-function getProjectUnderTestInstallStatements(readme: string): string[] {
-  return extractMarkdownSentences(readme)
-    .filter((statement) => /\bproject(?:-| )under(?:-| )test\b/i.test(statement))
-    .filter((statement) =>
-      /\bbun install\b|\binstall(?:ation|ing)?\b|\bdependencies?\b|\bthat command\b|\bthe\s+command\s+above\b/i.test(
-        statement,
-      ),
-    );
-}
-
 function extractGoogleSheetsSentences(readme: string): string[] {
   return extractMarkdownSentences(readme)
     .filter((statement) => /Google Sheets/i.test(statement));
@@ -53,28 +43,6 @@ function assertGoogleSheetsDropdownSupportStatement(readme: string): void {
   ]);
 }
 
-function assertReadmeInstallSafety(readme: string): void {
-  const setupIndex = readme.indexOf('## Setup');
-  const usageIndex = readme.indexOf('## Usage');
-  const setup = readme.slice(setupIndex, usageIndex);
-  const installCommands = [...readme.matchAll(/\bbun install(?:\s+--[a-z-]+)*/g)];
-  const approvedProjectUnderTestProhibition =
-    'Never run that command in the project under test.';
-  const projectUnderTestInstallStatements = getProjectUnderTestInstallStatements(readme);
-
-  expect(setupIndex).toBeGreaterThan(-1);
-  expect(usageIndex).toBeGreaterThan(setupIndex);
-  expect(installCommands.map((match) => match[0])).toEqual(['bun install --frozen-lockfile']);
-  for (const command of installCommands) {
-    expect(command.index).toBeGreaterThan(setupIndex);
-    expect(command.index).toBeLessThan(usageIndex);
-  }
-  expect(setup).toContain(
-    'If you need to recover manually, run this from the plugin root that contains `package.json` and `bun.lock`:',
-  );
-  expect(projectUnderTestInstallStatements).toEqual([approvedProjectUnderTestProhibition]);
-}
-
 test('artifact-export is discoverable from both plugin manifests', () => {
   for (const manifestPath of ['.claude-plugin/plugin.json', '.github/copilot-plugin.json']) {
     const manifest = JSON.parse(read(manifestPath));
@@ -83,44 +51,14 @@ test('artifact-export is discoverable from both plugin manifests', () => {
   }
 });
 
-test('artifact-export keeps dependency bootstrap at plugin root and the CLI at project root', () => {
+test('artifact export installs only at plugin root and invokes the source CLI from project root', () => {
   const skill = read('skills/artifact-export/SKILL.md');
   const readme = read('README.md');
-
   const rootsIndex = skill.indexOf('3. Name and retain two separate roots:');
   const sourceIndex = skill.indexOf('4. From `<project-root>`, check the source Markdown before invoking the CLI:');
-  const dependencyIndex = skill.indexOf('5. From `<plugin-root>`, check only the export dependencies:');
-  const cliIndex = skill.indexOf('6. Return to `<project-root>` and run the exact CLI command by its plugin-root path:');
-  const rulesIndex = skill.indexOf('## Rules');
-
   expect(rootsIndex).toBeGreaterThan(-1);
   expect(sourceIndex).toBeGreaterThan(rootsIndex);
-  expect(dependencyIndex).toBeGreaterThan(sourceIndex);
-  expect(cliIndex).toBeGreaterThan(dependencyIndex);
-  expect(rulesIndex).toBeGreaterThan(cliIndex);
-
   const rootsStep = skill.slice(rootsIndex, sourceIndex);
-  const dependencyStep = skill.slice(dependencyIndex, cliIndex);
-  const cliStep = skill.slice(cliIndex, rulesIndex);
-  const procedure = skill.slice(skill.indexOf('## Procedure'), rulesIndex);
-  const runtimePackageSetLines = dependencyStep
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.includes('Runtime package set:'));
-  const installCommands = [...skill.matchAll(/\bbun install(?:\s+--[a-z-]+)*/g)].map((match) => match[0]);
-  const installationInstructionLines = procedure
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => /\binstall(?:ation)?\b/i.test(line));
-  const expectedCliCommands = [
-    'bun "<plugin-root>\\scripts\\export-artifact.ts" --ticket <ticket-id> --artifact test-cases --format xlsx',
-    'bun "<plugin-root>\\scripts\\export-artifact.ts" --ticket <ticket-id> --artifact test-plan --format docx',
-    'bun "<plugin-root>\\scripts\\export-artifact.ts" --ticket <ticket-id> --artifact test-plan --format pdf',
-    'bun "<plugin-root>\\scripts\\export-artifact.ts" --ticket <ticket-id> --artifact test-plan --format docx,pdf',
-  ];
-  const skillCliCommands = [...skill.matchAll(/^\s*bun .*export-artifact\.ts.*$/gm)].map((match) => match[0].trim());
-  const readmeCliCommands = [...readme.matchAll(/^\s*bun .*export-artifact\.ts.*$/gm)].map((match) => match[0].trim());
-
   expect(rootsStep).toContain(
     '`<project-root>` is the project-under-test root. Keep it as the current directory for source validation and the export CLI.',
   );
@@ -128,63 +66,36 @@ test('artifact-export keeps dependency bootstrap at plugin root and the CLI at p
     '`.qa/<ticket-id>/...` resolves from `<project-root>`, so source and output files must remain in the target project, never in the plugin installation directory.',
   );
   expect(rootsStep).toContain(
-    '`<plugin-root>` contains this skill, `package.json`, and `bun.lock`; use it only for dependency checks and installation.',
+    '`<plugin-root>` contains this skill, `package.json`, `bun.lock`, and `scripts/export-artifact.ts`; use it for dependency checks and installation only.',
   );
-  expect(runtimePackageSetLines).toEqual([
-    '- Runtime package set: `exceljs`, `docx`, and `pdfkit`.',
+  const commands = (text: string) => [...text.matchAll(/^\s*bun .*export-artifact\.(?:js|ts).*$/gm)].map(match => match[0].trim());
+  expect(commands(skill)).toEqual([
+    'bun --no-install "<plugin-root>/scripts/export-artifact.ts" --ticket <ticket-id> --artifact test-cases --format xlsx',
+    'bun --no-install "<plugin-root>/scripts/export-artifact.ts" --ticket <ticket-id> --artifact test-plan --format docx',
+    'bun --no-install "<plugin-root>/scripts/export-artifact.ts" --ticket <ticket-id> --artifact test-plan --format pdf',
+    'bun --no-install "<plugin-root>/scripts/export-artifact.ts" --ticket <ticket-id> --artifact test-plan --format docx,pdf',
   ]);
-  expect(installationInstructionLines).toEqual([
-    '- `<plugin-root>` contains this skill, `package.json`, and `bun.lock`; use it only for dependency checks and installation.',
-    '- `.qa/<ticket-id>/...` resolves from `<project-root>`, so source and output files must remain in the target project, never in the plugin installation directory.',
-    '- Only when one or more packages in that exact set are missing, run exactly `bun install --frozen-lockfile` while the current directory is `<plugin-root>`.',
-    '- Otherwise, skip installation entirely.',
-    '- If Bun 1.3+ is unavailable or the installation fails, report the error and stop; do not invoke the CLI.',
-    '- Do not check or install dependencies for an unsupported request or a missing source Markdown file.',
-    '- Never run an install in `<project-root>` or any other project-under-test directory.',
-  ]);
-  expect(dependencyStep).toContain(
-    'Only when one or more packages in that exact set are missing, run exactly `bun install --frozen-lockfile` while the current directory is `<plugin-root>`.',
-  );
-  expect(dependencyStep).toContain('Otherwise, skip installation entirely.');
-  expect(dependencyStep).toContain(
-    'If Bun 1.3+ is unavailable or the installation fails, report the error and stop; do not invoke the CLI.',
-  );
-  expect(dependencyStep).toContain(
-    'Do not check or install dependencies for an unsupported request or a missing source Markdown file.',
-  );
-  expect(dependencyStep).toContain(
-    'Never run an install in `<project-root>` or any other project-under-test directory.',
-  );
-  expect(installCommands).toEqual(['bun install --frozen-lockfile']);
-  expect(skill.replace(dependencyStep, '')).not.toContain('bun install');
-  expect(cliStep).toContain('# Current directory: <project-root>');
-  expect(cliStep).toContain('Run the CLI by the plugin-root path, never by a path relative to the current directory.');
-  expect(skillCliCommands).toEqual(expectedCliCommands);
-  expect(procedure).not.toContain('bun scripts/export-artifact.ts');
-
-  expect(readme).toMatch(/Bun[^\r\n]*1\.3\+/);
-  expect(readme).toContain('bun install --frozen-lockfile');
-  expect(readme).toContain('Never run that command in the project under test.');
+  expect(skill).toContain('# Current directory: <project-root>');
+  expect(skill).toContain('Run the CLI by the plugin-root path, never by a path relative to the current directory.');
   expect(readme).toContain(
-    'Run every CLI command from `<project-root>`, the project-under-test root that contains `.qa`. Invoke the CLI by the plugin-root script path so `.qa/<ticket-id>/...` remains in the target project.',
+    'Run every CLI command from `<project-root>`, the project-under-test root that contains `.qa`. Invoke the CLI by the absolute plugin-root script path so `.qa/<ticket-id>/...` remains in the target project.',
   );
-  expect(readmeCliCommands).toEqual([
-    'bun "<plugin-root>\\scripts\\export-artifact.ts" --ticket PROJ-123 --artifact test-cases --format xlsx',
-    'bun "<plugin-root>\\scripts\\export-artifact.ts" --ticket PROJ-123 --artifact test-plan --format docx,pdf',
-    'bun "<plugin-root>\\scripts\\export-artifact.ts" --ticket SM26-207 --artifact test-plan --format docx,pdf',
+  expect(commands(readme)).toEqual([
+    'bun --no-install "<plugin-root>/scripts/export-artifact.ts" --ticket PROJ-123 --artifact test-cases --format xlsx',
+    'bun --no-install "<plugin-root>/scripts/export-artifact.ts" --ticket PROJ-123 --artifact test-plan --format docx,pdf',
+    'bun --no-install "<plugin-root>/scripts/export-artifact.ts" --ticket SM26-207 --artifact test-plan --format docx,pdf',
   ]);
-  expect(readme).not.toContain('bun scripts/export-artifact.ts');
+  for (const text of [skill, readme]) expect(text).not.toMatch(/dist[\\/]export-artifact\.js|build:export|export-bundle\.yml/);
 });
 
-test('artifact-export resolves the supported matrix before source validation and dependency bootstrap', () => {
+test('artifact export resolves the matrix and source before checking or installing dependencies', () => {
   const skill = read('skills/artifact-export/SKILL.md');
-
   const resolutionIndex = skill.indexOf('2. Resolve the requested artifact and format, then enforce the supported matrix:');
   const sourceIndex = skill.indexOf('4. From `<project-root>`, check the source Markdown before invoking the CLI:');
-  const dependencyIndex = skill.indexOf('5. From `<plugin-root>`, check only the export dependencies:');
-  const cliIndex = skill.indexOf('6. Return to `<project-root>` and run the exact CLI command by its plugin-root path:');
+  const prerequisiteIndex = skill.indexOf('5. From `<plugin-root>`, check or install the export dependencies:');
+  const cliIndex = skill.indexOf('6. From `<project-root>`, run the exact CLI command by its plugin-root path:');
   const resolutionStep = skill.slice(resolutionIndex, sourceIndex);
-
+  expect(skill).toContain('- [ ] Check plugin-root dependencies; install with Bun and use npm once if needed');
   expect(resolutionIndex).toBeGreaterThan(-1);
   expect(resolutionStep).toContain(
     '| `.qa/<ticket-id>/<ticket-id>-test-cases.md` | `.qa/<ticket-id>/exports/<ticket-id>-test-cases.xlsx` |',
@@ -193,37 +104,80 @@ test('artifact-export resolves the supported matrix before source validation and
     '| `.qa/<ticket-id>/<ticket-id>-plan.md` | `.qa/<ticket-id>/exports/<ticket-id>-plan.docx`, `.qa/<ticket-id>/exports/<ticket-id>-plan.pdf` |',
   );
   expect(sourceIndex).toBeGreaterThan(resolutionIndex);
-  expect(dependencyIndex).toBeGreaterThan(sourceIndex);
-  expect(cliIndex).toBeGreaterThan(dependencyIndex);
+  expect(prerequisiteIndex).toBeGreaterThan(sourceIndex);
+  expect(cliIndex).toBeGreaterThan(prerequisiteIndex);
+  const check = skill.slice(prerequisiteIndex, cliIndex);
+  expect(check).toContain('Bun 1.3+');
+  expect(check).toContain('unavailable or older');
+  expect(check).toContain('explain the prerequisite and stop');
+  expect(check).toContain('Check actual module loading with `bun --no-install`, not just whether a package directory exists.');
+  expect(check).toContain("selected format's parser and renderer");
+  expect(check).toContain('preserve-completion-state.ts');
+  expect(check).toContain('If the required modules load, skip installation.');
+  expect(check).toContain("Do not load an unrelated format's renderer");
+  expect(check).toContain('Never install in `<project-root>` or another project-under-test directory.');
+  expect(check).toContain('Do not check/install for an unsupported request or missing source Markdown.');
+  expect(check).toContain('return to `<project-root>`');
+  expect(skill).toContain('carriedCompletionCount');
+  expect(skill).toContain('It does **not** upload anything');
 });
 
-test('README confines every Bun install command to frozen plugin-root recovery setup', () => {
+test('artifact export uses Bun first and one npm fallback without changing lockfiles or repairing unrelated failures', () => {
+  const skill = read('skills/artifact-export/SKILL.md');
   const readme = read('README.md');
-
-  assertReadmeInstallSafety(readme);
-  expect(() =>
-    assertReadmeInstallSafety(`${readme}\nThe command above may also be run in the project under test.`),
-  ).toThrow();
-  expect(
-    getProjectUnderTestInstallStatements(
-      `${readme}\nYou may run \`bun install --frozen-lockfile\` in the project under test.`,
-    ),
-  ).toContain('You may run bun install --frozen-lockfile in the project under test.');
-  expect(() =>
-    assertReadmeInstallSafety(`${readme}\nYou may run \`bun install --frozen-lockfile\` in the project under test.`),
-  ).toThrow();
+  for (const text of [skill, readme]) {
+    const bun = text.indexOf('bun install --frozen-lockfile');
+    const npm = text.indexOf('npm install --no-save --package-lock=false');
+    expect(bun).toBeGreaterThan(-1);
+    expect(npm).toBeGreaterThan(bun);
+    expect(text).toContain('npm does not enforce `bun.lock`');
+    expect(text).toContain('`package.json` ranges');
+    expect(text).toContain('with `bun --no-install`');
+    expect(text).toContain('npm is unavailable');
+    expect(text).toContain('plugin root');
+    expect(text).toContain('exit code');
+    expect(text).toMatch(/credentials.*redact|redact.*credentials/);
+    expect(text).toMatch(/Markdown.*errors.*not|Source-code, Markdown/);
+    expect(text).toContain('temporary junctions/symlinks');
+    expect(text).toContain('global caches');
+    expect(text).toContain('registry/TLS settings');
+    expect(text).toContain('elevate privileges');
+    expect(text).not.toMatch(/npm (?:ci|install --force)|bun install --force/);
+  }
+  expect(skill).toContain('A successful install exit code with empty/unloadable packages is still an installation failure.');
+  expect(skill).toContain('If Bun installation fails, or the post-install check still cannot load a dependency');
+  expect(skill).toContain('npm as a one-time fallback');
+  expect(skill).toContain('Do not run both installers when Bun succeeded and imports work.');
+  expect(skill).toContain('Do not loop through more installation attempts.');
+  expect(skill).toContain('do not rewrite `package.json` or either lockfile');
+  expect(readme).toContain('try npm **once**');
+  expect(readme).toContain('Do not run npm when Bun installation and imports already succeeded.');
+  expect(readme).toContain('No generated exporter distribution, bundle build step or CI auto-commit is required.');
 });
 
-test('README documents the supported export commands, outputs, and compatibility limits', () => {
+test('artifact export install and CLI instructions are OS-agnostic', () => {
+  const skill = read('skills/artifact-export/SKILL.md');
+  const readme = read('README.md');
+  const exportDocs = readme.slice(readme.indexOf('## QA artifact export'), readme.indexOf('## E2E regression script generation'));
+  for (const text of [skill, exportDocs]) {
+    expect(text).toContain('Windows, macOS, and Linux');
+    expect(text).toContain('shell/PATH');
+    expect(text).toContain('npm install --no-save --package-lock=false');
+    expect(text).toContain('npm.cmd');
+    expect(text).toMatch(/only if the environment requires it|only a shell-specific alternative when needed/);
+    expect(text).toContain('documentation separator');
+    expect(text).not.toMatch(/```(?:powershell|bash|cmd)\b/);
+    expect(text).not.toMatch(/npm\.cmd install|[A-Za-z]:\\Users\\|\/Users\/|\/home\//);
+  }
+});
+
+test('artifact export README preserves outputs, semantics, and compatibility limits', () => {
   const readme = read('README.md');
   const xlsxRenderer = read('scripts/lib/export/render-test-cases-xlsx.ts');
 
   expect(readme).toContain('bun install --frozen-lockfile');
-  expect(readme).toContain('exceljs');
-  expect(readme).toContain('docx');
-  expect(readme).toContain('pdfkit');
-  expect(readme).toContain('bun "<plugin-root>\\scripts\\export-artifact.ts" --ticket PROJ-123 --artifact test-cases --format xlsx');
-  expect(readme).toContain('bun "<plugin-root>\\scripts\\export-artifact.ts" --ticket PROJ-123 --artifact test-plan --format docx,pdf');
+  expect(readme).toContain('bun --no-install "<plugin-root>/scripts/export-artifact.ts" --ticket PROJ-123 --artifact test-cases --format xlsx');
+  expect(readme).toContain('bun --no-install "<plugin-root>/scripts/export-artifact.ts" --ticket PROJ-123 --artifact test-plan --format docx,pdf');
   expect(readme).toContain('.qa/<ticket-id>/<ticket-id>-test-cases.md');
   expect(readme).toContain('.qa/<ticket-id>/<ticket-id>-plan.md');
   expect(readme).toContain('.qa/<ticket-id>/exports/<ticket-id>-test-cases.xlsx');

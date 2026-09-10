@@ -3,10 +3,6 @@
 import { getTicketArtifactFilenames, type TicketArtifactFilenames } from './lib/export/artifact-filenames.ts';
 import { parseTestCasesMarkdown } from './lib/export/parse-test-cases-markdown.ts';
 import { parseTestPlanMarkdown } from './lib/export/parse-test-plan-markdown.ts';
-import { readCompletionState } from './lib/export/preserve-completion-state.ts';
-import { renderTestCasesXlsx } from './lib/export/render-test-cases-xlsx.ts';
-import { renderTestPlanDocx } from './lib/export/render-test-plan-docx.ts';
-import { renderTestPlanPdf } from './lib/export/render-test-plan-pdf.ts';
 import { ExportValidationError, type ExportArtifact, type ExportFormat } from './lib/export/types.ts';
 import { writeAtomically } from './lib/export/write-atomically.ts';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
@@ -43,7 +39,7 @@ function getCliArgs(argv: string[]): string[] {
 }
 
 function printUsage(): void {
-  console.error('Usage: bun run scripts/export-artifact.ts --ticket <ticket-id> --artifact test-cases|test-plan --format xlsx|docx|pdf|docx,pdf');
+  console.error(`Usage: bun --no-install "${Bun.argv[1]}" --ticket <ticket-id> --artifact test-cases|test-plan --format xlsx|docx|pdf|docx,pdf`);
 }
 
 function parseFormatValue(value: string): ExportFormat[] {
@@ -168,10 +164,12 @@ async function exportTestCases(ticketId: string): Promise<ExportResult> {
   const outputPath = join(ticketDirectory, 'exports', filenames.testCasesXlsx);
   const outputDisplayPath = join('.qa', ticketId, 'exports', filenames.testCasesXlsx);
   const document = parseTestCasesMarkdown(await readSourceText(sourcePath, sourceDisplayPath), sourceDisplayPath);
+  const { renderTestCasesXlsx } = await import('./lib/export/render-test-cases-xlsx.ts');
   let priorCompletion = new Map();
   let carriedCompletionCount: number | undefined;
 
   if (await Bun.file(outputPath).exists()) {
+    const { readCompletionState } = await import('./lib/export/preserve-completion-state.ts');
     priorCompletion = await readCompletionState(outputPath);
     carriedCompletionCount = document.cases.filter((testCase) => priorCompletion.has(testCase.id)).length;
   }
@@ -195,6 +193,7 @@ async function renderPlanOutput(
   document: ReturnType<typeof parseTestPlanMarkdown>,
 ): Promise<{ buffer: Uint8Array; outputPath: string; outputDisplayPath: string }> {
   if (format === 'docx') {
+    const { renderTestPlanDocx } = await import('./lib/export/render-test-plan-docx.ts');
     return {
       buffer: await renderTestPlanDocx(document),
       outputPath: join(ticketDirectory, 'exports', filenames.planDocx),
@@ -202,6 +201,7 @@ async function renderPlanOutput(
     };
   }
 
+  const { renderTestPlanPdf } = await import('./lib/export/render-test-plan-pdf.ts');
   return {
     buffer: await renderTestPlanPdf(document),
     outputPath: join(ticketDirectory, 'exports', filenames.planPdf),

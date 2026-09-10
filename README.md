@@ -95,7 +95,7 @@ Edit the Markdown. Every artifact is a plain file, later stages read whatever is
 ## Prerequisites
 
 - [Bun](https://bun.sh) 1.3+
-- Local Bun-managed export dependencies from the plugin root `package.json` / `bun.lock`: `exceljs`, `docx`, and `pdfkit`
+- For artifact export: dependencies from the plugin's `package.json` / `bun.lock`, installed in the plugin root when needed. Bun is the primary installer and runtime; npm must be available only if the installation fallback is needed.
 - Playwright MCP runs via `npx @playwright/mcp@latest`; Figma MCP is remote and optional
 - For `cms-test-data`: a content-types export from the site under test at `.qa/cms-schema/content-types.episerverdata`, produced once in the CMS under **Admin → Export Data** with **content types only** (never a content export — it carries real customer data). Re-export it only when the site's schema changes.
 
@@ -212,18 +212,40 @@ The Markdown file remains the source of truth. Exporting never regenerates conte
 
 Plan DOCX/PDF exports render supported GFM Markdown semantics rather than copying Markdown delimiters. Images become alt text; raw HTML becomes text; only http/https/mailto links are clickable, while unsafe links remain plain text labels.
 
-`<plugin-root>` is the installed plugin directory containing `package.json`, `bun.lock`, and `scripts/export-artifact.ts`. Run every CLI command from `<project-root>`, the project-under-test root that contains `.qa`. Invoke the CLI by the plugin-root script path so `.qa/<ticket-id>/...` remains in the target project. Do not change to `<plugin-root>` to run an export.
+`<plugin-root>` is the installed plugin directory containing `package.json`, `bun.lock`, and `scripts/export-artifact.ts`. Run every CLI command from `<project-root>`, the project-under-test root that contains `.qa`. Invoke the CLI by the absolute plugin-root script path so `.qa/<ticket-id>/...` remains in the target project. Use `<plugin-root>` only for dependency checks and installation, then return to `<project-root>` before exporting.
 
-```powershell
-# Current directory: <project-root>
-bun "<plugin-root>\scripts\export-artifact.ts" --ticket PROJ-123 --artifact test-cases --format xlsx
-bun "<plugin-root>\scripts\export-artifact.ts" --ticket PROJ-123 --artifact test-plan --format docx,pdf
+The workflow is OS-agnostic: Windows, macOS, and Linux use the same Bun-first/npm-fallback policy. Resolve the actual plugin location and adapt executable invocation, quoting, and path separators to the current shell/PATH; do not assume PowerShell or a fixed user directory. `npm` is the logical command; an executable such as `npm.cmd` is only a shell-specific alternative when needed.
+
+Resolve the supported format and check the source Markdown first. If Bun 1.3+ is unavailable, report the prerequisite and stop. From the plugin root, check actual loading of the selected parser/renderer modules (and XLSX completion reader) with `bun --no-install`; directory existence is not enough. If they load, skip installation. Otherwise, for a missing/unusable dependency, run:
+
+```text
+# Current directory: <plugin-root>
+bun install --frozen-lockfile
 ```
+
+Require a successful install and repeat the module import check. If Bun installation fails, or its packages still cannot load, try npm **once**, also in the plugin root:
+
+```text
+# Current directory: <plugin-root>
+npm install --no-save --package-lock=false
+```
+
+After npm, require a successful exit code and successful module imports with `bun --no-install`; otherwise report the command, plugin root, exit code and relevant errors with credentials redacted, then stop. If npm is unavailable, report it along with the original Bun failure. Do not run npm when Bun installation and imports already succeeded. npm does not enforce `bun.lock`, so fallback versions follow `package.json` ranges; do not modify manifests or lockfiles to make installation pass.
+
+Never install in the project under test. Do not create temporary junctions/symlinks, delete global caches, change registry/TLS settings, elevate privileges, or add more repair attempts. Markdown, source-code, argument and output-filesystem errors are not dependency-install failures and do not trigger npm fallback. A PDF-only dependency is not required to export XLSX/DOCX.
+
+```text
+# Current directory: <project-root>
+bun --no-install "<plugin-root>/scripts/export-artifact.ts" --ticket PROJ-123 --artifact test-cases --format xlsx
+bun --no-install "<plugin-root>/scripts/export-artifact.ts" --ticket PROJ-123 --artifact test-plan --format docx,pdf
+```
+
+Substitute the absolute script path using the host's conventions; `/` in these examples is a documentation separator.
 
 To regenerate the SM26-207 plan exports from the project-under-test root:
 
-```powershell
-bun "<plugin-root>\scripts\export-artifact.ts" --ticket SM26-207 --artifact test-plan --format docx,pdf
+```text
+bun --no-install "<plugin-root>/scripts/export-artifact.ts" --ticket SM26-207 --artifact test-plan --format docx,pdf
 ```
 
 `<ticket-id>-test-cases.xlsx` preserves the portable `Priority` and `Completed` values as plain text in real Microsoft Excel dropdowns backed by the hidden `_Validation` sheet workbook named ranges `PriorityOptions` and `CompletionStatusOptions`:
@@ -242,7 +264,7 @@ Exports stay local under `.qa/<ticket-id>/exports/`. The skill and CLI do **not*
 
 ### Compatibility notes
 
-- **Microsoft 365 (Windows/macOS):** `<ticket-id>-test-cases.xlsx`, `<ticket-id>-plan.docx`, and `<ticket-id>-plan.pdf` are first-class local outputs.
+- **Microsoft 365 (Windows/macOS target):** `<ticket-id>-test-cases.xlsx`, `<ticket-id>-plan.docx`, and `<ticket-id>-plan.pdf` are intended local outputs; actual application checks, including macOS, remain pending until recorded below.
 - **Google Drive:** QAs can upload the generated DOCX/PDF/XLSX files manually for sharing or preview.
 - **Google Sheets:** opening `<ticket-id>-test-cases.xlsx` through Drive/Sheets may normalize nonessential formatting, but Google Sheets dropdown conversion/editing for `Priority` and `Completed` is not supported.
 
@@ -282,6 +304,11 @@ The template's own dependencies (`@playwright/test`, `dotenv`, lint/format) live
 
 ## Development
 
-```powershell
+In the development checkout:
+
+```text
+bun install --frozen-lockfile
 bun test
 ```
+
+Export runs directly from the plugin's TypeScript source with local dependencies. No generated exporter distribution, bundle build step or CI auto-commit is required. The npm fallback above is an installation workaround, not a second lockfile-management workflow; retain `bun.lock` as the primary reproducible install input.
